@@ -1,8 +1,8 @@
 .data
 
-    myplaintext: .string "LAUREATO"
-    mycypher: .string "CAB"
-    sostK: .word -5 
+    myplaintext: .string "eryelrqs"
+    mycypher: .string "ADE"
+    sostK: .word 5 
     blocKey: .string "OLE"
     auxstring: .string ""
     
@@ -114,8 +114,68 @@
             j Print
         
     Dizionario:
-        
+        add t0 s0 zero # testa str
+        d_loop:
+            lb a2 0(t0) # carattere da cifrare
+            beq a2 zero Print
+            li t1 32 # lowerbound
+            blt a2 t1 exit
+            li t1 127 # upperbound
+            bgt a2 t1 exit
+            jal check_intervallo # ritorna a3
+            beq a3 zero cifratura_min
+            li t1 1
+            beq a3 t1 cifratura_mai
+            li t1 48 # 0
+            blt a2 t1 advance_d_loop
+            li t1 58 # 9
+            blt a2 t1 cifratura_num
+            advance_d_loop: 
+                addi t0 t0 1
+                j d_loop
+            cifratura_min:
+                addi t1 a2 -97 # sottrae al char da cifrare 96
+                li t2 122 # z
+                sub a2 t2 t1 # a2 viene invertito nelle minuscole
+                addi a2 a2 -32 # converte a2 in maiuscola
+                sb a2 0(t0)
+                addi t0 t0 1
+                j d_loop
+            cifratura_mai:
+                addi t1 a2 -65
+                li t2 90 # Z
+                sub a2 t2 t1
+                addi a2 a2 32
+                sb a2 0(t0)
+                addi t0 t0 1
+                j d_loop
+            cifratura_num:
+                li t1 57 # 9
+                sub a2 t1 a2
+                addi a2 a2 48
+                sb a2 0(t0)
+                addi t0 t0 1
+                j d_loop
+                        
     Inversione:
+        add t0 s0 zero # testa str
+        fill_stack:
+            lb t1 0(t0)
+            beq t1 zero reset_head
+            addi sp sp -1
+            sb t1 0(sp)
+            addi t0 t0 1
+            j fill_stack
+        reset_head:
+            add t0 s0 zero
+            reverse_copy:
+                lb t2 0(t0)
+                beq t2 zero Print
+                lb t2 0(sp)
+                addi sp sp 1
+                sb t2 0(t0)
+                addi t0 t0 1
+                j reverse_copy
     
     inserimento_auxstr:
         li t1 45 # -
@@ -190,6 +250,10 @@
             beq t1 t2 Cifrario_a_Blocchi # se char B chiama cif a blocchi
             li t2 67 # C
             beq t1 t2 Cifrario_Occorrenze # se char C chiama cif occ
+            li t2 68 # D
+            beq t1 t2 Dizionario
+            li t2 69 # E
+            beq t1 t2 Inversione
             j loop
     
     exit:
