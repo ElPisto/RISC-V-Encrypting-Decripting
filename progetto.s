@@ -1,7 +1,7 @@
 .data
 
-    myplaintext: .string "eryelrqs"
-    mycypher: .string "ADE"
+    myplaintext: .string "i'-"
+    mycypher: .string "BBBBBBBB"
     sostK: .word 5 
     blocKey: .string "OLE"
     auxstring: .string ""
@@ -19,7 +19,7 @@
         add t0 s0 zero # testa stringa  
         a_loop: 
             lb t1 0(t0) # carattere della stringa corrente
-            beq t1 zero Print
+            beq t1 zero to_string
             add a2 t1 zero # manda il carattere corrente al check dell'intervallo
             jal check_intervallo
             li t4 26 # numero lettere
@@ -63,8 +63,9 @@
         add t1 s3 zero # copia testa stringa key in t1
         b_loop:
             lb t2 0(t0) # carattere corrente
-            beq t2 zero Print
+            beq t2 zero to_string
             lb t3 0(t1)
+            beq t3 zero reset_key_head
             add t2 t2 t3 # somma chiave a carattere corrente
             li t4 96
             rem t2 t2 t4 # mod(96)
@@ -72,11 +73,9 @@
             sb t2 0(t0)
             addi t0 t0 1
             addi t1 t1 1
-            lb t3 0(t1)
-            beq t3 zero reset_key_head
             j b_loop
         reset_key_head:
-            add t1 s3 zero # resetta testa chiave quando finisce di scorrere la stringa 
+            add t1 s3 zero # resetta testa chiave quando finisce di scorrere la stringa di codifica
             j b_loop
             
     Cifrario_Occorrenze:
@@ -111,13 +110,13 @@
             j c_loop 
         aggiorna_testa:
             add s0 s4 zero
-            j Print
+            j to_string
         
     Dizionario:
         add t0 s0 zero # testa str
         d_loop:
             lb a2 0(t0) # carattere da cifrare
-            beq a2 zero Print
+            beq a2 zero to_string
             li t1 32 # lowerbound
             blt a2 t1 exit
             li t1 127 # upperbound
@@ -170,12 +169,43 @@
             add t0 s0 zero
             reverse_copy:
                 lb t2 0(t0)
-                beq t2 zero Print
+                beq t2 zero to_string
                 lb t2 0(sp)
                 addi sp sp 1
                 sb t2 0(t0)
                 addi t0 t0 1
                 j reverse_copy
+    
+    Decifratura_a_Blocchi:
+        add t0 s0 zero # copia testa stringa in t0
+        add t1 s3 zero # copia testa stringa key in t1
+        db_loop:
+            lb t2 0(t0) # carattere corrente
+            beq t2 zero to_string
+            lb t3 0(t1)
+            beq t3 zero dreset_key_head
+            sub t2 t2 t3 # sottrazione chiave a carattere corrente
+            li t4 96
+            add t2 t2 t4 # mod(96)
+            addi t2 t2 -32
+            li t4 31
+            bgt t2 t4 skip_add
+            addi t2 t2 96
+            skip_add:
+            sb t2 0(t0)
+            addi t0 t0 1
+            addi t1 t1 1
+            j db_loop
+        dreset_key_head:
+            add t1 s3 zero # resetta testa chiave quando finisce di scorrere la stringa 
+            j db_loop
+        #[Future Pisto] finisci dioc    
+        Decifratura_Occorrenze:
+            add t0 s0 zero # testa str
+            add t4 s4 zero # testa auxstr
+            # doppio puntatore, uno scorre per trovare le pos in ordine crescente posizioni, l'altro per trovare
+            # il char corrispondante alla pos attualmente in decifratura, trovare anche la pos max da usare per finire i cicli
+                    
     
     inserimento_auxstr:
         li t1 45 # -
@@ -227,23 +257,22 @@
             li a3 2 # intervallo del carattere corrente (speciale)
             jr ra
     
-    DECODING_PLAIN:
-    
-    Print:
+    to_string:
         add a0 s0 zero
         li a7 4
         ecall
         li a0 10
         li a7 11
         ecall
-        j loop
+        beq s5 zero loop
+        j rev_loop
     
     MY_CYPHER_READ:
         add a4 s1 zero # testa mycypher in t0
         loop:
             lb t1 0(a4) # carattere da esaminare della stringa mycypher
+            beq t1 zero adjust_values
             addi a4 a4 1
-            beq t1 zero exit
             li t2 65 # A
             beq t1 t2 Cifrario_Cesare # se carattere A chiama cif di cesare
             li t2 66 # B
@@ -255,6 +284,22 @@
             li t2 69 # E
             beq t1 t2 Inversione
             j loop
-    
+        adjust_values:
+            sub s2 zero s2 # inverte sostK
+            li s5 1
+        rev_loop:
+            lb t1 0(a4)
+            blt a4 s1 exit
+            addi a4 a4 -1
+            li t2 65 # A
+            beq t1 t2 Cifrario_Cesare
+            li t2 66 # B
+            beq t1 t2 Decifratura_a_Blocchi
+            li t2 68 # D
+            beq t1 t2 Dizionario
+            li t2 69 # E
+            beq t1 t2 Inversione
+            j rev_loop
+        
     exit:
         ecall
