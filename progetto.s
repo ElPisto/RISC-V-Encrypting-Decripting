@@ -20,7 +20,7 @@
             lb t1 0(t0) # carattere della stringa corrente
             beq t1 zero to_string
             add a2 t1 zero # manda il carattere corrente al check dell'intervallo
-            jal check_intervallo
+            jal interval_check
             li t4 26 # numero lettere
             add t1 t1 s2 # somma sostK al valore corrente
             li t2 0
@@ -86,7 +86,7 @@
             beq a1 t1 skip_char_write
             sb a1 0(t4) # salva il carattere nella stringa aux
             add a0 t0 zero # puntatore alle occorrenze
-            jal inserimento_auxstr
+            jal write_auxstr
             c_inner_loop:
                 addi a0 a0 1
                 lb t5 0(a0) # val da confrontare con a1
@@ -94,7 +94,7 @@
                 bne a1 t5 next_char
                 li t1 27 # val fittizio
                 sb t1 0(a0)
-                jal inserimento_auxstr
+                jal write_auxstr
                 j c_inner_loop
             next_char:
                 j c_inner_loop
@@ -119,7 +119,7 @@
             blt a2 t1 exit
             li t1 127 # upperbound
             bgt a2 t1 exit
-            jal check_intervallo # ritorna a3
+            jal interval_check # ritorna a3
             beq a3 zero cypher_minuscule
             li t1 1
             beq a3 t1 cypher_maiuscule
@@ -278,7 +278,7 @@
                 add a3 a3 t2 # offset
                 j multiplication
     
-    inserimento_auxstr:
+    write_auxstr:
         li t1 45 # -
         addi t4 t4 1
         sb t1 0(t4) # inserisce "-"
@@ -286,8 +286,8 @@
         li a2 0 # contatore lungh stackpointer
         sub a3 a0 s0 # pos dell'occorrenza (IL COGLIONE DI COSIMO E' SALVO DIO BOIA STRAMALEDETTO INFAME)
         addi a3 a3 1
-        j divisione
-        back_insert:
+        j dividing
+        set_counter:
         li t6 0 # counter
         write_loop:
             addi sp sp 1
@@ -300,24 +300,24 @@
             addi t4 t4 -1
             jr ra
     
-    divisione:
+    dividing:
         li t1 10
         rem t2 a3 t1 # a3mod10
         sb t2 0(sp) # salva il resto in sp
         addi sp sp -1 # allunga sp
         addi a2 a2 1
         div a3 a3 t1 
-        bne a3 zero divisione
-        j back_insert
+        bne a3 zero dividing
+        j set_counter
     
-    check_intervallo:
+    interval_check:
         li t2 65
         blt a2 t2 set_special_char
         li t2 90
-        bgt a2 t2 check_lowercase
+        bgt a2 t2 lowercase_check
         li a3 1 # intervallo del carattere corrente (maiuscola)
         jr ra
-        check_lowercase:
+        lowercase_check:
             li t2 97
             blt a2 t2 set_special_char
             li t2 122
