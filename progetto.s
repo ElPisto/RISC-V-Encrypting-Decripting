@@ -83,7 +83,7 @@
             lb a1 0(t0) # val da inserire nella nuova stringa
             beq a1 zero exit_cifrario_occorrenze # printa quando scorre tutta la str con il primo counter
             li t1 27 # val fittizio
-            beq a1 t1 skip
+            beq a1 t1 skip_char_write
             sb a1 0(t4) # salva il carattere nella stringa aux
             add a0 t0 zero # puntatore alle occorrenze
             jal inserimento_auxstr
@@ -103,7 +103,7 @@
             li t1 32 # space
             sb t1 0(t4)
             addi t4 t4 1
-        skip: # skippa
+        skip_char_write: # skippa
             addi t0 t0 1
             j c_loop 
         exit_cifrario_occorrenze:
@@ -120,17 +120,17 @@
             li t1 127 # upperbound
             bgt a2 t1 exit
             jal check_intervallo # ritorna a3
-            beq a3 zero cifratura_min
+            beq a3 zero cypher_minuscule
             li t1 1
-            beq a3 t1 cifratura_mai
+            beq a3 t1 cypher_maiuscule
             li t1 48 # 0
             blt a2 t1 advance_d_loop
             li t1 58 # 9
-            blt a2 t1 cifratura_num
+            blt a2 t1 cypher_number
             advance_d_loop: 
                 addi t0 t0 1
                 j d_loop
-            cifratura_min:
+            cypher_minuscule:
                 addi t1 a2 -97 # sottrae al char da cifrare 96
                 li t2 122 # z
                 sub a2 t2 t1 # a2 viene invertito nelle minuscole
@@ -138,7 +138,7 @@
                 sb a2 0(t0)
                 addi t0 t0 1
                 j d_loop
-            cifratura_mai:
+            cypher_maiuscule:
                 addi t1 a2 -65
                 li t2 90 # Z
                 sub a2 t2 t1
@@ -146,7 +146,7 @@
                 sb a2 0(t0)
                 addi t0 t0 1
                 j d_loop
-            cifratura_num:
+            cypher_number:
                 li t1 57 # 9
                 sub a2 t1 a2
                 addi a2 a2 48
@@ -165,14 +165,14 @@
             j fill_stack
         reset_head:
             add t0 s0 zero
-            reverse_copy:
-                lb t2 0(t0)
-                beq t2 zero to_string
-                lb t2 0(sp)
-                addi sp sp 1
-                sb t2 0(t0)
-                addi t0 t0 1
-                j reverse_copy
+        reverse_copy:
+            lb t2 0(t0)
+            beq t2 zero to_string
+            lb t2 0(sp)
+            addi sp sp 1
+            sb t2 0(t0)
+            addi t0 t0 1
+            j reverse_copy
     
     Decifratura_a_Blocchi:
         add t0 s0 zero # copia testa stringa in t0
