@@ -201,39 +201,39 @@
             add t1 s3 zero # resetta testa chiave quando finisce di scorrere la stringa 
             j db_loop
             
-        Decifratura_Occorrenze:
-            li t4 0 # max lenght str
-            add t0 s0 zero # testa str
-            write_char_loop:
-                lb t1 0(t0) # carattere da inserire e decifrare
-                addi t0 t0 1
-                pos_loop:
-                    lb t2 0(t0)
-                    beq t2 zero exit_decifratura_occorrenze
-                    li t3 45 # -
-                    beq t2 t3 advance2
-                    li t3 32 # space
-                    beq t2 t3 advance
-                    li a1 0 # contatore numeri nello stack
-                    li a3 0 # risultato conversione da mandare indietro
-                    li a2 0
-                    j convert_to_integer # converte i numeri dopo i - contenuti in t2 e li ritorna in a3
-                    write:
-                        bgt a3 t4 max
-                        after_max:
-                        addi a3 a3 -1 # corregge offset
-                        add a3 s4 a3
-                        sb t1 0(a3) # E' VERO HA SEMPRE RAGIONE COCSX
-                        j pos_loop
-                    advance:
-                        addi t0 t0 1
-                        j write_char_loop
-                    advance2:
-                        addi t0 t0 1
-                        j pos_loop
-                    max:
-                        add t4 a3 zero
-                        j after_max
+    Decifratura_Occorrenze:
+        li t4 0 # max lenght str
+        add t0 s0 zero # testa str
+        write_char_loop:
+            lb t1 0(t0) # carattere da inserire e decifrare
+            addi t0 t0 1
+            pos_loop:
+                lb t2 0(t0)
+                beq t2 zero exit_decifratura_occorrenze
+                li t3 45 # -
+                beq t2 t3 advance_pos_loop
+                li t3 32 # space
+                beq t2 t3 advance_write_char_loop
+                li a1 0 # contatore numeri nello stack
+                li a3 0 # risultato conversione da mandare indietro
+                li a2 0
+                j convert_to_integer # converte i numeri dopo i - contenuti in t2 e li ritorna in a3
+                write_char:
+                    bgt a3 t4 set_max
+                max_set:
+                    addi a3 a3 -1 # corregge offset
+                    add a3 s4 a3
+                    sb t1 0(a3)
+                    j pos_loop
+                advance_pos_loop:
+                    addi t0 t0 1
+                    j pos_loop
+                advance_write_char_loop:
+                    addi t0 t0 1
+                    j write_char_loop
+                set_max:
+                    add t4 a3 zero
+                    j max_set
                     exit_decifratura_occorrenze:
                         add t4 t4 s4
                         j swap_head
@@ -261,7 +261,7 @@
             add a2 a1 zero
         moltiplicazione:
             sub t3 a1 a2 # e-10
-            beq a2 zero write
+            beq a2 zero write_char
             addi a2 a2 -1
             lb t2 0(sp)
             addi sp sp 1
