@@ -185,15 +185,13 @@
             sub t2 t2 t3 # sottrazione chiave a carattere corrente
             li t4 48
             blt t3 t4 skip_mod
-            # li t4 96
-            # add t2 t2 t4 # mod(96)
             skip_mod:
                 addi t2 t2 -32
             li t4 32
-            mod:
-            bge t2 t4 skip_add
-            addi t2 t2 96
-            j mod
+            correct_module:
+                bge t2 t4 skip_add
+                addi t2 t2 96
+                j correct_module
             skip_add:
                 sb t2 0(t0)
                 addi t0 t0 1
