@@ -1,18 +1,17 @@
 .data
 
-    myplaintext: .string "i'-"
-    mycypher: .string "BBBBBBBB"
+
+    mycypher: .string "C"
     sostK: .word 5 
     blocKey: .string "OLE"
-    auxstring: .string ""
+    myplaintext: .string "cocsx"
     
 .text
-    
     la s0 myplaintext
     la s1 mycypher
     lw s2 sostK
     la s3 blocKey
-    la s4 auxstring
+    la s4 300009000 # indirizzo stringa ausiliaria molto lontano
     j MY_CYPHER_READ
     
     Cifrario_Cesare:
@@ -83,33 +82,37 @@
         add t4 s4 zero # copia testa string aux
         c_loop:
             lb a1 0(t0) # val da inserire nella nuova stringa
-            beq a1 zero aggiorna_testa # printa quando scorre tutta la str con il primo counter
+            beq a1 zero scambia_testa # printa quando scorre tutta la str con il primo counter
             li t1 27 # val fittizio
-            beq a1 t1 tag
-            sb a1 0(t4)
+            beq a1 t1 skip
+            sb a1 0(t4) # salva il carattere nella stringa aux
             add a0 t0 zero # puntatore alle occorrenze
             jal inserimento_auxstr
-        c_inner_loop:
-            addi a0 a0 1
-            lb t5 0(a0) # val da confrontare con a1
-            beq t5 zero c_loop_forward
-            bne a1 t5 skip
-            li t1 27 # val fittizio
-            sb t1 0(a0)
-            jal inserimento_auxstr
-            j c_inner_loop
-            skip:
+            c_inner_loop:
+                addi a0 a0 1
+                lb t5 0(a0) # val da confrontare con a1
+                beq t5 zero c_loop_forward
+                bne a1 t5 next_char
+                li t1 27 # val fittizio
+                sb t1 0(a0)
+                jal inserimento_auxstr
+                j c_inner_loop
+            next_char:
                 j c_inner_loop
         c_loop_forward:
             addi t4 t4 1
             li t1 32 # space
             sb t1 0(t4)
             addi t4 t4 1
-            tag: # skippa
+        skip: # skippa
             addi t0 t0 1
             j c_loop 
-        aggiorna_testa:
+        scambia_testa:
+            addi t4 t4 -1
+            sb zero 0(t4) # scrive il fine stringa
+            add t1 s0 zero
             add s0 s4 zero
+            add s4 t1 zero
             j to_string
         
     Dizionario:
@@ -199,13 +202,83 @@
         dreset_key_head:
             add t1 s3 zero # resetta testa chiave quando finisce di scorrere la stringa 
             j db_loop
-        #[Future Pisto] finisci dioc    
+            
         Decifratura_Occorrenze:
             add t0 s0 zero # testa str
-            add t4 s4 zero # testa auxstr
-            # doppio puntatore, uno scorre per trovare le pos in ordine crescente posizioni, l'altro per trovare
-            # il char corrispondante alla pos attualmente in decifratura, trovare anche la pos max da usare per finire i cicli
-                    
+            write_char_loop:
+                lb t1 0(t0) # carattere da inserire e decifrare
+                addi sp sp -1
+                sb t1 0(sp)
+                addi t0 t0 1
+                pos_loop:
+                    lb t2 0(t0)
+                    beq t2 zero scambia_testa2
+                    li t3 45 # -
+                    beq t2 t3 advance2
+                    li t3 32 # space
+                    beq t2 t3 advance
+                    li a1 0 # contatore numeri nello stack
+                    li a3 0 # risultato conversione da mandare indietro
+                    li t1 0
+                    j convert_to_integer # converte i numeri dopo i - contenuti in t2 e li ritorna in a3
+                    write:
+                        addi a3 a3 -1 # corregge offset
+                        add a3 s4 a3
+                        lb t1 0(sp)
+                        addi sp sp -1
+                        sb t1 0(a3) # E' VERO HA SEMPRE RAGIONE COCSX
+                        j pos_loop
+                    advance:
+                        addi t0 t0 1
+                        j write_char_loop
+                    advance2:
+                        addi t0 t0 1
+                        j pos_loop
+                    scambia_testa2:
+                        # sb zero 0(t4) # scrive il fine stringa
+                        add t1 s0 zero
+                        add s0 s4 zero
+                        add s4 t1 zero
+                        j to_string
+    
+    convert_to_integer:
+        lb t2 0(t0)
+        li t3 45 # -
+        beq t2 t3 intermedio
+        li t3 32 # space
+        beq t2 t3 intermedio
+        beq t2 zero intermedio
+        addi sp sp -1
+        sb t2 0(sp)
+        addi a1 a1 1 # segnala il numero di elementi nello stack
+        addi t0 t0 1
+        j convert_to_integer
+        intermedio:
+            add t1 a1 zero
+        moltiplicazione:
+            sub t3 a1 t1 # e-10
+            beq t1 zero write
+            addi t1 t1 -1
+            addi sp sp 1
+            lb t2 0(sp)
+            addi t2 t2 -48
+            beq t3 zero out
+            li t6 0 # contatore per pow
+            pow:
+                beq t6 t3 out
+                li t5 10
+                mul t2 t2 t5
+                addi t6 t6 1
+                j pow
+            out:
+                add a3 a3 t2 # offset
+                add a0 a3 zero
+                li a7 1
+                ecall
+                li a0 10
+                li a7 11
+                ecall
+                j moltiplicazione
     
     inserimento_auxstr:
         li t1 45 # -
@@ -218,14 +291,14 @@
         j divisione
         back_insert:
         li t6 0 # counter
-        insert_loop:
+        write_loop:
             addi sp sp 1
             lb t5 0(sp)
             addi t1 t5 48  # converte int in ascii
             sb t1 0(t4)
             addi t4 t4 1
             addi t6 t6 1
-            blt t6 a2 insert_loop
+            blt t6 a2 write_loop
             addi t4 t4 -1
             jr ra
     
@@ -295,6 +368,8 @@
             beq t1 t2 Cifrario_Cesare
             li t2 66 # B
             beq t1 t2 Decifratura_a_Blocchi
+            li t2 67 # C
+            beq t1 t2 Decifratura_Occorrenze
             li t2 68 # D
             beq t1 t2 Dizionario
             li t2 69 # E
