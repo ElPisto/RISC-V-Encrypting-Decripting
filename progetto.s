@@ -216,8 +216,8 @@
                 beq t2 t3 advance_write_char_loop
                 li a1 0 # contatore numeri nello stack
                 li a3 0 # risultato conversione da mandare indietro
-                li a2 0
-                j convert_to_integer # converte i numeri dopo i - contenuti in t2 e li ritorna in a3
+                li a2 0 #
+                j convert_to_int # converte i numeri dopo i - contenuti in t2 e li ritorna in a3
                 write_char:
                     bgt a3 t4 set_max
                 max_set:
@@ -245,7 +245,7 @@
         add s4 t1 zero
         j to_string
     
-    convert_to_integer:
+    convert_to_int:
         lb t2 0(t0)
         li t3 45 # -
         beq t2 t3 intermedio
@@ -256,27 +256,27 @@
         sb t2 0(sp)
         addi a1 a1 1 # segnala il numero di elementi nello stack
         addi t0 t0 1
-        j convert_to_integer
+        j convert_to_int
         intermedio:
             add a2 a1 zero
-        moltiplicazione:
+        multiplication:
             sub t3 a1 a2 # e-10
             beq a2 zero write_char
             addi a2 a2 -1
             lb t2 0(sp)
             addi sp sp 1
             addi t2 t2 -48
-            beq t3 zero out
+            beq t3 zero skip_pow
             li t6 0 # contatore per pow
             pow:
-                beq t6 t3 out
+                beq t6 t3 skip_pow
                 li t5 10
                 mul t2 t2 t5
                 addi t6 t6 1
                 j pow
-            out:
+            skip_pow:
                 add a3 a3 t2 # offset
-                j moltiplicazione
+                j multiplication
     
     inserimento_auxstr:
         li t1 45 # -
