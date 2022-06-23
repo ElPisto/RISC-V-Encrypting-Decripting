@@ -3,14 +3,14 @@
 
     mycypher: .string "ABCDEEDCBA"
     sostK: .word 5 
-    blocKey: .string "MY7*!hm3rwFW%"
-    myplaintext: .string "jDs5b8h9e&j7HYwgH$UxWSac&VMZji@CUbrREYLXK*bzw^Y8%nCw25KEy2U*h4RPHvnkYCz3oNoKkXfyFwsZ8%ovqEdPmad"
+    key: .string "-"
+    myplaintext: .string "cocsx!"
     
 .text
     la s0 myplaintext
     la s1 mycypher
     lw s2 sostK
-    la s3 blocKey
+    la s3 key
     la s4 300009000 # indirizzo stringa ausiliaria molto lontano
     j MY_CYPHER_READ
     
@@ -27,7 +27,6 @@
             beq a3 t2 lowercase
             li t2 1
             beq a3 t2 uppercase
-            # se carattere speciale
             addi t0 t0 1
             j a_loop
             lowercase:
@@ -82,7 +81,7 @@
         add t4 s4 zero # copia testa string aux
         c_loop:
             lb a1 0(t0) # val da inserire nella nuova stringa
-            beq a1 zero scambia_testa # printa quando scorre tutta la str con il primo counter
+            beq a1 zero exit_cifrario_occorrenze # printa quando scorre tutta la str con il primo counter
             li t1 27 # val fittizio
             beq a1 t1 skip
             sb a1 0(t4) # salva il carattere nella stringa aux
@@ -107,13 +106,9 @@
         skip: # skippa
             addi t0 t0 1
             j c_loop 
-        scambia_testa:
+        exit_cifrario_occorrenze:
             addi t4 t4 -1
-            sb zero 0(t4) # scrive il fine stringa
-            add t1 s0 zero
-            add s0 s4 zero
-            add s4 t1 zero
-            j to_string
+            j swap_head
         
     Dizionario:
         add t0 s0 zero # testa str
@@ -209,14 +204,14 @@
             j db_loop
             
         Decifratura_Occorrenze:
-            li a5 0 # max lenght str
+            li t4 0 # max lenght str
             add t0 s0 zero # testa str
             write_char_loop:
                 lb t1 0(t0) # carattere da inserire e decifrare
                 addi t0 t0 1
                 pos_loop:
                     lb t2 0(t0)
-                    beq t2 zero scambia_testa2
+                    beq t2 zero exit_decifratura_occorrenze
                     li t3 45 # -
                     beq t2 t3 advance2
                     li t3 32 # space
@@ -226,7 +221,7 @@
                     li a2 0
                     j convert_to_integer # converte i numeri dopo i - contenuti in t2 e li ritorna in a3
                     write:
-                        bgt a3 a5 max
+                        bgt a3 t4 max
                         after_max:
                         addi a3 a3 -1 # corregge offset
                         add a3 s4 a3
@@ -239,15 +234,18 @@
                         addi t0 t0 1
                         j pos_loop
                     max:
-                        add a5 a3 zero
+                        add t4 a3 zero
                         j after_max
-                    scambia_testa2:
-                        add a5 a5 s4
-                        sb zero 0(a5) # scrive il fine stringa
-                        add t1 s0 zero
-                        add s0 s4 zero
-                        add s4 t1 zero
-                        j to_string
+                    exit_decifratura_occorrenze:
+                        add t4 t4 s4
+                        j swap_head
+    
+    swap_head:
+        sb zero 0(t4) # scrive il fine stringa
+        add t1 s0 zero
+        add s0 s4 zero
+        add s4 t1 zero
+        j to_string
     
     convert_to_integer:
         lb t2 0(t0)
