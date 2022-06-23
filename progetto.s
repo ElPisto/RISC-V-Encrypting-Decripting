@@ -1,10 +1,10 @@
 .data
 
 
-    mycypher: .string "C"
+    mycypher: .string "ABCDEEDCBA"
     sostK: .word 5 
-    blocKey: .string "OLE"
-    myplaintext: .string "cocsx"
+    blocKey: .string "MY7*!hm3rwFW%"
+    myplaintext: .string "jDs5b8h9e&j7HYwgH$UxWSac&VMZji@CUbrREYLXK*bzw^Y8%nCw25KEy2U*h4RPHvnkYCz3oNoKkXfyFwsZ8%ovqEdPmad"
     
 .text
     la s0 myplaintext
@@ -185,30 +185,34 @@
         db_loop:
             lb t2 0(t0) # carattere corrente
             beq t2 zero to_string
-            lb t3 0(t1)
+            lb t3 0(t1) # char corrente della key
             beq t3 zero dreset_key_head
             sub t2 t2 t3 # sottrazione chiave a carattere corrente
-            li t4 96
-            add t2 t2 t4 # mod(96)
-            addi t2 t2 -32
-            li t4 31
-            bgt t2 t4 skip_add
+            li t4 48
+            blt t3 t4 skip_mod
+            # li t4 96
+            # add t2 t2 t4 # mod(96)
+            skip_mod:
+                addi t2 t2 -32
+            li t4 32
+            mod:
+            bge t2 t4 skip_add
             addi t2 t2 96
+            j mod
             skip_add:
-            sb t2 0(t0)
-            addi t0 t0 1
-            addi t1 t1 1
-            j db_loop
+                sb t2 0(t0)
+                addi t0 t0 1
+                addi t1 t1 1
+                j db_loop
         dreset_key_head:
             add t1 s3 zero # resetta testa chiave quando finisce di scorrere la stringa 
             j db_loop
             
         Decifratura_Occorrenze:
+            li a5 0 # max lenght str
             add t0 s0 zero # testa str
             write_char_loop:
                 lb t1 0(t0) # carattere da inserire e decifrare
-                addi sp sp -1
-                sb t1 0(sp)
                 addi t0 t0 1
                 pos_loop:
                     lb t2 0(t0)
@@ -219,13 +223,13 @@
                     beq t2 t3 advance
                     li a1 0 # contatore numeri nello stack
                     li a3 0 # risultato conversione da mandare indietro
-                    li t1 0
+                    li a2 0
                     j convert_to_integer # converte i numeri dopo i - contenuti in t2 e li ritorna in a3
                     write:
+                        bgt a3 a5 max
+                        after_max:
                         addi a3 a3 -1 # corregge offset
                         add a3 s4 a3
-                        lb t1 0(sp)
-                        addi sp sp -1
                         sb t1 0(a3) # E' VERO HA SEMPRE RAGIONE COCSX
                         j pos_loop
                     advance:
@@ -234,8 +238,12 @@
                     advance2:
                         addi t0 t0 1
                         j pos_loop
+                    max:
+                        add a5 a3 zero
+                        j after_max
                     scambia_testa2:
-                        # sb zero 0(t4) # scrive il fine stringa
+                        add a5 a5 s4
+                        sb zero 0(a5) # scrive il fine stringa
                         add t1 s0 zero
                         add s0 s4 zero
                         add s4 t1 zero
@@ -254,13 +262,13 @@
         addi t0 t0 1
         j convert_to_integer
         intermedio:
-            add t1 a1 zero
+            add a2 a1 zero
         moltiplicazione:
-            sub t3 a1 t1 # e-10
-            beq t1 zero write
-            addi t1 t1 -1
-            addi sp sp 1
+            sub t3 a1 a2 # e-10
+            beq a2 zero write
+            addi a2 a2 -1
             lb t2 0(sp)
+            addi sp sp 1
             addi t2 t2 -48
             beq t3 zero out
             li t6 0 # contatore per pow
@@ -272,12 +280,6 @@
                 j pow
             out:
                 add a3 a3 t2 # offset
-                add a0 a3 zero
-                li a7 1
-                ecall
-                li a0 10
-                li a7 11
-                ecall
                 j moltiplicazione
     
     inserimento_auxstr:
