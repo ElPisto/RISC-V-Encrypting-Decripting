@@ -1,8 +1,8 @@
 .data
 
-    K: .word 5 
+    K: .word 1
     key: .string "Ultr4C0csx"
-    mycypher: .string "CA"
+    mycypher: .string "A"
     myplaintext: .string "Jack O' Lantern-mino"
     
 .text
@@ -23,40 +23,40 @@
             beq t1 zero to_string
             add a2 t1 zero # manda il carattere corrente al check dell'intervallo
             jal interval_check
-            li t4 26 # numero lettere
-            add t1 t1 s2 # somma K al valore corrente
-            li t2 0
-            beq a3 t2 lowercase
+            li t2 2
+            beq a3 t2 advance_a_loop
+            beq a3 zero convert_minuscule
             li t2 1
-            beq a3 t2 uppercase
-            addi t0 t0 1
-            j a_loop
-            lowercase:
-                li t5 97 # a
-                blt t1 t5 underflow
-                li t5 122 # z
-                bgt t1 t5 overflow
+            beq a3 t2 convert_maiuscule
+            convert_maiuscule:
+                addi t1 t1 -65
+                add t1 t1 s2
+                li t2 26
+                rem t1 t1 t2
+                jal adjust_module
+                addi t1 t1 65
                 sb t1 0(t0)
                 addi t0 t0 1
                 j a_loop
-            uppercase:
-                li t5 65 # A
-                blt t1 t5 underflow
-                li t5 90 # Z
-                bgt t1 t5 overflow
+            convert_minuscule:
+                addi t1 t1 -97
+                add t1 t1 s2
+                li t2 26
+                rem t1 t1 t2
+                jal adjust_module
+                addi t1 t1 97
                 sb t1 0(t0)
                 addi t0 t0 1
                 j a_loop
-             underflow:
-                    add t1 t1 t4
-                    sb t1 0(t0)
-                    addi t0 t0 1
-                    j a_loop
-             overflow:
-                    sub t1 t1 t4
-                    sb t1 0(t0)
-                    addi t0 t0 1
-                    j a_loop
+            advance_a_loop:
+                addi t0 t0 1
+                j a_loop
+            adjust_module:
+                bge t1 zero back
+                addi t1 t1 26
+                jr ra
+                back:
+                    jr ra
     
     # Il cifrario a blocchi cifra ogni carattere della stringa di partenza sommandoci il cod ASCII del carattere corrente della
     # chiave, modulando il risultato in 96 e infine sommando 32
