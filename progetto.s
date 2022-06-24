@@ -1,19 +1,21 @@
 .data
 
-
-    mycypher: .string "ABCDEEDCBA"
-    sostK: .word 5 
-    key: .string "-"
-    myplaintext: .string "cocsx!"
+    K: .word 5 
+    key: .string "Ultr4C0csx"
+    mycypher: .string "CA"
+    myplaintext: .string "Jack O' Lantern-mino"
     
 .text
     la s0 myplaintext
     la s1 mycypher
-    lw s2 sostK
+    lw s2 K
     la s3 key
     la s4 300009000 # indirizzo stringa ausiliaria molto lontano
     j MY_CYPHER_READ
     
+    # Somma al codice ASCII del carattere in esame una costante K per cifrare il carattere originale, l'algoritmo codifica
+    # soltanto lettere maiuscole e minuscole, ignorando il resto.
+    # [TODO] implementa bene l'algo del prof
     Cifrario_Cesare:
         add t0 s0 zero # testa stringa  
         a_loop: 
@@ -22,7 +24,7 @@
             add a2 t1 zero # manda il carattere corrente al check dell'intervallo
             jal interval_check
             li t4 26 # numero lettere
-            add t1 t1 s2 # somma sostK al valore corrente
+            add t1 t1 s2 # somma K al valore corrente
             li t2 0
             beq a3 t2 lowercase
             li t2 1
@@ -56,6 +58,9 @@
                     addi t0 t0 1
                     j a_loop
     
+    # Il cifrario a blocchi cifra ogni carattere della stringa di partenza sommandoci il cod ASCII del carattere corrente della
+    # chiave, modulando il risultato in 96 e infine sommando 32
+    
     Cifrario_a_Blocchi:
         add t0 s0 zero # copia testa stringa in t0
         add t1 s3 zero # copia testa stringa key in t1
@@ -75,6 +80,9 @@
         reset_key_head:
             add t1 s3 zero # resetta testa chiave quando finisce di scorrere la stringa di codifica
             j b_loop
+            
+    # Il cifrario a occorrenze scrive in una stringa ausiliaria il carattere e le posizioni delle sue occorrenze nella stringa
+    # di partenza. Infine scambia il puntatore alla stringa ausiliaria s4 con quella iniziale s0
             
     Cifrario_Occorrenze:
         add t0 s0 zero # copia testa string input
@@ -109,7 +117,10 @@
         exit_cifrario_occorrenze:
             addi t4 t4 -1
             j swap_head
-        
+    
+    # Il dizionario inverte una lettera minuscola nel suo intervallo e poi la trasforma in maiuscola, vale anche il viceversa.
+    # Per i numeri invece sottrae a 57 (cod9) il codASCII del numero, infine lascia invariati i caratteri speciali.
+    
     Dizionario:
         add t0 s0 zero # testa str
         d_loop:
@@ -153,7 +164,9 @@
                 sb a2 0(t0)
                 addi t0 t0 1
                 j d_loop
-                        
+    
+    # L'Inversione inverte la stringa di input
+    
     Inversione:
         add t0 s0 zero # testa str
         fill_stack:
@@ -173,6 +186,9 @@
             sb t2 0(t0)
             addi t0 t0 1
             j reverse_copy
+    
+    # Questa funzione decifra la cifratura a blocchi sottraendo la chiave al carattere di partenza, modulandolo opportunamente
+    # in mod96.
     
     Decifratura_a_Blocchi:
         add t0 s0 zero # copia testa stringa in t0
@@ -200,7 +216,10 @@
         dreset_key_head:
             add t1 s3 zero # resetta testa chiave quando finisce di scorrere la stringa 
             j db_loop
-            
+    
+    # La decifratura a occorrenze decifra la stringa cifrata scrivendo in una stringa ausiliaria s4 i caratteri nelle opportune
+    # posizioni, infine scambia il puntatore alla stringa s4 con quella iniziale s0
+    
     Decifratura_Occorrenze:
         li t4 0 # max lenght str
         add t0 s0 zero # testa str
@@ -284,7 +303,7 @@
         sb t1 0(t4) # inserisce "-"
         addi t4 t4 1
         li a2 0 # contatore lungh stackpointer
-        sub a3 a0 s0 # pos dell'occorrenza (IL COGLIONE DI COSIMO E' SALVO DIO BOIA STRAMALEDETTO INFAME)
+        sub a3 a0 s0 # pos dell'occorrenza
         addi a3 a3 1
         j dividing
         set_counter:
@@ -338,6 +357,9 @@
         beq s5 zero loop
         j rev_loop
     
+    # La my cypher read scorre la stringa mycypher chiamando la funzione opportuna al riconoscimento di una lettera valida,
+    # ignorando i caratteri che non hanno significato.
+    
     MY_CYPHER_READ:
         add a4 s1 zero # testa mycypher in t0
         loop:
@@ -357,7 +379,7 @@
             j loop
         adjust_values:
             sub s2 zero s2 # inverte sostK
-            li s5 1
+            li s5 1 # segnala che si sta leggendo al contrario il mycypher
         rev_loop:
             lb t1 0(a4)
             blt a4 s1 exit
