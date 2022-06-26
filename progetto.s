@@ -1,27 +1,27 @@
 .data
 
-    K: .word 1
-    key: .string "Ultr4C0csx"
-    mycypher: .string "A"
-    myplaintext: .string "Jack O' Lantern-mino"
+    sostK: .word 5
+    blockey: .string "set"
+    #mycypher: .string "ABC"
+    mycypher: .string "ECD"
+    #myplaintext: .string "Campo da tennis"
+    myplaintext: .string "26-06-2022"
     
 .text
     la s0 myplaintext
     la s1 mycypher
-    lw s2 K
-    la s3 key
-    la s4 300009000 # indirizzo stringa ausiliaria molto lontano
-    j MY_CYPHER_READ
+    lw s2 sostK
+    la s3 blockey
+    la s4 300009000
+    li s5 0
+    j Lettura_mycypher
     
-    # Somma al codice ASCII del carattere in esame una costante K per cifrare il carattere originale, l'algoritmo codifica
-    # soltanto lettere maiuscole e minuscole, ignorando il resto.
-    # [TODO] implementa bene l'algo del prof
-    Cifrario_Cesare:
-        add t0 s0 zero # testa stringa  
+    Cifrario_a_Sostituzione:
+        add t0 s0 zero  
         a_loop: 
-            lb t1 0(t0) # carattere della stringa corrente
+            lb t1 0(t0)
             beq t1 zero to_string
-            add a2 t1 zero # manda il carattere corrente al check dell'intervallo
+            add a2 t1 zero
             jal interval_check
             li t2 2
             beq a3 t2 advance_a_loop
@@ -29,28 +29,28 @@
             li t2 1
             beq a3 t2 convert_maiuscule
             convert_maiuscule:
-                addi t1 t1 -65
-                add t1 t1 s2
-                li t2 26
-                rem t1 t1 t2
-                jal adjust_module
-                addi t1 t1 65
-                sb t1 0(t0)
-                addi t0 t0 1
+                li a1 65
+                jal cypher_letter
                 j a_loop
             convert_minuscule:
-                addi t1 t1 -97
-                add t1 t1 s2
-                li t2 26
-                rem t1 t1 t2
-                jal adjust_module
-                addi t1 t1 97
-                sb t1 0(t0)
-                addi t0 t0 1
+                li a1 97
+                jal cypher_letter
                 j a_loop
             advance_a_loop:
                 addi t0 t0 1
                 j a_loop
+            cypher_letter:
+                sub t1 t1 a1
+                add t1 t1 s2
+                li t2 26
+                rem t1 t1 t2
+                sb ra 0(sp)
+                jal adjust_module
+                lb ra 0(sp)
+                add t1 t1 a1
+                sb t1 0(t0)
+                addi t0 t0 1
+                jr ra
             adjust_module:
                 bge t1 zero back
                 addi t1 t1 26
@@ -58,119 +58,107 @@
                 back:
                     jr ra
     
-    # Il cifrario a blocchi cifra ogni carattere della stringa di partenza sommandoci il cod ASCII del carattere corrente della
-    # chiave, modulando il risultato in 96 e infine sommando 32
-    
     Cifrario_a_Blocchi:
-        add t0 s0 zero # copia testa stringa in t0
-        add t1 s3 zero # copia testa stringa key in t1
+        add t0 s0 zero
+        add t1 s3 zero
         b_loop:
-            lb t2 0(t0) # carattere corrente
+            lb t2 0(t0)
             beq t2 zero to_string
             lb t3 0(t1)
             beq t3 zero reset_key_head
-            add t2 t2 t3 # somma chiave a carattere corrente
+            add t2 t2 t3
             li t4 96
-            rem t2 t2 t4 # mod(96)
+            rem t2 t2 t4
             addi t2 t2 32
             sb t2 0(t0)
             addi t0 t0 1
             addi t1 t1 1
             j b_loop
         reset_key_head:
-            add t1 s3 zero # resetta testa chiave quando finisce di scorrere la stringa di codifica
+            add t1 s3 zero
             j b_loop
             
-    # Il cifrario a occorrenze scrive in una stringa ausiliaria il carattere e le posizioni delle sue occorrenze nella stringa
-    # di partenza. Infine scambia il puntatore alla stringa ausiliaria s4 con quella iniziale s0
-            
-    Cifrario_Occorrenze:
-        add t0 s0 zero # copia testa string input
-        add t4 s4 zero # copia testa string aux
+    Cifratura_Occorrenze:
+        add t0 s0 zero
+        add t4 s4 zero
         c_loop:
-            lb a1 0(t0) # val da inserire nella nuova stringa
-            beq a1 zero exit_cifrario_occorrenze # printa quando scorre tutta la str con il primo counter
-            li t1 27 # val fittizio
+            lb a1 0(t0)
+            beq a1 zero exit_cifratura_occorrenze
+            li t1 27
             beq a1 t1 skip_char_write
-            sb a1 0(t4) # salva il carattere nella stringa aux
-            add a0 t0 zero # puntatore alle occorrenze
+            sb a1 0(t4)
+            add a0 t0 zero
             jal write_auxstr
             c_inner_loop:
                 addi a0 a0 1
-                lb t5 0(a0) # val da confrontare con a1
-                beq t5 zero c_loop_forward
+                lb t5 0(a0)
+                beq t5 zero advance_c_loop
                 bne a1 t5 next_char
-                li t1 27 # val fittizio
+                li t1 27
                 sb t1 0(a0)
                 jal write_auxstr
-                j c_inner_loop
             next_char:
                 j c_inner_loop
-        c_loop_forward:
+        advance_c_loop:
             addi t4 t4 1
-            li t1 32 # space
+            li t1 32
             sb t1 0(t4)
             addi t4 t4 1
-        skip_char_write: # skippa
+        skip_char_write:
             addi t0 t0 1
             j c_loop 
-        exit_cifrario_occorrenze:
+        exit_cifratura_occorrenze:
             addi t4 t4 -1
             j swap_head
     
-    # Il dizionario inverte una lettera minuscola nel suo intervallo e poi la trasforma in maiuscola, vale anche il viceversa.
-    # Per i numeri invece sottrae a 57 (cod9) il codASCII del numero, infine lascia invariati i caratteri speciali.
-    
     Dizionario:
-        add t0 s0 zero # testa str
+        add t0 s0 zero
         d_loop:
-            lb a2 0(t0) # carattere da cifrare
+            lb a2 0(t0)
             beq a2 zero to_string
-            li t1 32 # lowerbound
+            li t1 32
             blt a2 t1 exit
-            li t1 127 # upperbound
+            li t1 127
             bgt a2 t1 exit
-            jal interval_check # ritorna a3
+            jal interval_check
             beq a3 zero cypher_minuscule
             li t1 1
             beq a3 t1 cypher_maiuscule
-            li t1 48 # 0
+            li t1 48
             blt a2 t1 advance_d_loop
-            li t1 58 # 9
+            li t1 58
             blt a2 t1 cypher_number
             advance_d_loop: 
                 addi t0 t0 1
                 j d_loop
             cypher_minuscule:
-                addi t1 a2 -97 # sottrae al char da cifrare 96
-                li t2 122 # z
-                sub a2 t2 t1 # a2 viene invertito nelle minuscole
-                addi a2 a2 -32 # converte a2 in maiuscola
+                addi a2 a2 -97
+                li t1 122
+                sub a2 t1 a2
+                addi a2 a2 -32
                 sb a2 0(t0)
                 addi t0 t0 1
                 j d_loop
             cypher_maiuscule:
-                addi t1 a2 -65
-                li t2 90 # Z
-                sub a2 t2 t1
+                addi a2 a2 -65
+                li t1 90
+                sub a2 t1 a2
                 addi a2 a2 32
                 sb a2 0(t0)
                 addi t0 t0 1
                 j d_loop
             cypher_number:
-                li t1 57 # 9
+                li t1 57
                 sub a2 t1 a2
                 addi a2 a2 48
                 sb a2 0(t0)
                 addi t0 t0 1
                 j d_loop
     
-    # L'Inversione inverte la stringa di input
-    
     Inversione:
-        add t0 s0 zero # testa str
+        add t0 s0 zero
         fill_stack:
-            lb t1 0(t0)
+            lb t1 0(t0) 
             beq t1 zero reset_head
             addi sp sp -1
             sb t1 0(sp)
@@ -178,174 +166,75 @@
             j fill_stack
         reset_head:
             add t0 s0 zero
-        reverse_copy:
+        empty_stack:
             lb t2 0(t0)
             beq t2 zero to_string
             lb t2 0(sp)
             addi sp sp 1
             sb t2 0(t0)
             addi t0 t0 1
-            j reverse_copy
-    
-    # Questa funzione decifra la cifratura a blocchi sottraendo la chiave al carattere di partenza, modulandolo opportunamente
-    # in mod96.
+            j empty_stack
     
     Decifratura_a_Blocchi:
-        add t0 s0 zero # copia testa stringa in t0
-        add t1 s3 zero # copia testa stringa key in t1
+        add t0 s0 zero
+        add t1 s3 zero
         db_loop:
-            lb t2 0(t0) # carattere corrente
+            lb t2 0(t0)
             beq t2 zero to_string
-            lb t3 0(t1) # char corrente della key
+            lb t3 0(t1)
             beq t3 zero dreset_key_head
-            sub t2 t2 t3 # sottrazione chiave a carattere corrente
-            li t4 48
-            blt t3 t4 skip_mod
-            skip_mod:
-                addi t2 t2 -32
+            sub t2 t2 t3
+            addi t2 t2 -32
             li t4 32
             correct_module:
-                bge t2 t4 skip_add
+                bge t2 t4 advance_db_loop
                 addi t2 t2 96
                 j correct_module
-            skip_add:
+            advance_db_loop:
                 sb t2 0(t0)
                 addi t0 t0 1
                 addi t1 t1 1
                 j db_loop
         dreset_key_head:
-            add t1 s3 zero # resetta testa chiave quando finisce di scorrere la stringa 
+            add t1 s3 zero
             j db_loop
     
-    # La decifratura a occorrenze decifra la stringa cifrata scrivendo in una stringa ausiliaria s4 i caratteri nelle opportune
-    # posizioni, infine scambia il puntatore alla stringa s4 con quella iniziale s0
-    
     Decifratura_Occorrenze:
-        li t4 0 # max lenght str
-        add t0 s0 zero # testa str
+        li t4 0
+        add t0 s0 zero
         write_char_loop:
-            lb t1 0(t0) # carattere da inserire e decifrare
+            lb t1 0(t0)
             addi t0 t0 1
             pos_loop:
                 lb t2 0(t0)
                 beq t2 zero exit_decifratura_occorrenze
-                li t3 45 # -
+                li t3 45
                 beq t2 t3 advance_pos_loop
-                li t3 32 # space
+                li t3 32
                 beq t2 t3 advance_write_char_loop
-                li a1 0 # contatore numeri nello stack
-                li a3 0 # risultato conversione da mandare indietro
-                li a2 0 #
-                j convert_to_int # converte i numeri dopo i - contenuti in t2 e li ritorna in a3
-                write_char:
-                    bgt a3 t4 set_max
-                max_set:
-                    addi a3 a3 -1 # corregge offset
-                    add a3 s4 a3
-                    sb t1 0(a3)
-                    j pos_loop
+                li a1 0
+                li a3 0
+                li a2 0
+                j convert_to_int
                 advance_pos_loop:
                     addi t0 t0 1
                     j pos_loop
                 advance_write_char_loop:
                     addi t0 t0 1
                     j write_char_loop
-                set_max:
-                    add t4 a3 zero
-                    j max_set
+                write_char:
+                    bgt a3 t4 set_max
+                    max_set:
+                        addi a3 a3 -1
+                        add a3 s4 a3
+                        sb t1 0(a3)
+                        j pos_loop
+                    set_max:
+                        add t4 a3 zero
+                        j max_set
                     exit_decifratura_occorrenze:
                         add t4 t4 s4
                         j swap_head
-    
-    swap_head:
-        sb zero 0(t4) # scrive il fine stringa
-        add t1 s0 zero
-        add s0 s4 zero
-        add s4 t1 zero
-        j to_string
-    
-    convert_to_int:
-        lb t2 0(t0)
-        li t3 45 # -
-        beq t2 t3 intermedio
-        li t3 32 # space
-        beq t2 t3 intermedio
-        beq t2 zero intermedio
-        addi sp sp -1
-        sb t2 0(sp)
-        addi a1 a1 1 # segnala il numero di elementi nello stack
-        addi t0 t0 1
-        j convert_to_int
-        intermedio:
-            add a2 a1 zero
-        multiplication:
-            sub t3 a1 a2 # e-10
-            beq a2 zero write_char
-            addi a2 a2 -1
-            lb t2 0(sp)
-            addi sp sp 1
-            addi t2 t2 -48
-            beq t3 zero skip_pow
-            li t6 0 # contatore per pow
-            pow:
-                beq t6 t3 skip_pow
-                li t5 10
-                mul t2 t2 t5
-                addi t6 t6 1
-                j pow
-            skip_pow:
-                add a3 a3 t2 # offset
-                j multiplication
-    
-    write_auxstr:
-        li t1 45 # -
-        addi t4 t4 1
-        sb t1 0(t4) # inserisce "-"
-        addi t4 t4 1
-        li a2 0 # contatore lungh stackpointer
-        sub a3 a0 s0 # pos dell'occorrenza
-        addi a3 a3 1
-        j dividing
-        set_counter:
-        li t6 0 # counter
-        write_loop:
-            addi sp sp 1
-            lb t5 0(sp)
-            addi t1 t5 48  # converte int in ascii
-            sb t1 0(t4)
-            addi t4 t4 1
-            addi t6 t6 1
-            blt t6 a2 write_loop
-            addi t4 t4 -1
-            jr ra
-    
-    dividing:
-        li t1 10
-        rem t2 a3 t1 # a3mod10
-        sb t2 0(sp) # salva il resto in sp
-        addi sp sp -1 # allunga sp
-        addi a2 a2 1
-        div a3 a3 t1 
-        bne a3 zero dividing
-        j set_counter
-    
-    interval_check:
-        li t2 65
-        blt a2 t2 set_special_char
-        li t2 90
-        bgt a2 t2 lowercase_check
-        li a3 1 # intervallo del carattere corrente (maiuscola)
-        jr ra
-        lowercase_check:
-            li t2 97
-            blt a2 t2 set_special_char
-            li t2 122
-            bgt a2 t2 set_special_char
-            li a3 0 # intervallo del carattere corrente (minuscola)
-            jr ra
-        set_special_char:
-            li a3 2 # intervallo del carattere corrente (speciale)
-            jr ra
     
     to_string:
         add a0 s0 zero
@@ -357,42 +246,125 @@
         beq s5 zero loop
         j rev_loop
     
-    # La my cypher read scorre la stringa mycypher chiamando la funzione opportuna al riconoscimento di una lettera valida,
-    # ignorando i caratteri che non hanno significato.
+    interval_check:
+        li t2 65
+        blt a2 t2 set_special_char
+        li t2 90
+        bgt a2 t2 lowercase_check
+        li a3 1
+        jr ra
+        lowercase_check:
+            li t2 97
+            blt a2 t2 set_special_char
+            li t2 122
+            bgt a2 t2 set_special_char
+            li a3 0
+            jr ra
+        set_special_char:
+            li a3 2
+            jr ra
     
-    MY_CYPHER_READ:
-        add a4 s1 zero # testa mycypher in t0
+    write_auxstr:
+        li a2 0
+        li t1 45
+        addi t4 t4 1
+        sb t1 0(t4)
+        addi t4 t4 1
+        sub a3 a0 s0
+        addi a3 a3 1
+        dividing:
+            li t1 10
+            rem t2 a3 t1
+            sb t2 0(sp)
+            addi sp sp -1
+            addi a2 a2 1
+            div a3 a3 t1 
+            bne a3 zero dividing
+            li t6 0
+        write_loop:
+            addi sp sp 1
+            lb t5 0(sp)
+            addi t1 t5 48
+            sb t1 0(t4)
+            addi t4 t4 1
+            addi t6 t6 1
+            blt t6 a2 write_loop
+            addi t4 t4 -1
+            jr ra
+    
+    convert_to_int:
+        lb t2 0(t0)
+        li t3 45
+        beq t2 t3 conversion
+        li t3 32
+        beq t2 t3 conversion
+        beq t2 zero conversion
+        addi sp sp -1
+        sb t2 0(sp)
+        addi a1 a1 1
+        addi t0 t0 1
+        j convert_to_int
+        conversion:
+            add a2 a1 zero
+        multiplication:
+            sub t3 a1 a2
+            beq a2 zero write_char
+            addi a2 a2 -1
+            lb t2 0(sp)
+            addi sp sp 1
+            addi t2 t2 -48
+            beq t3 zero skip_pow
+            li t6 0
+            pow:
+                beq t6 t3 skip_pow
+                li t5 10
+                mul t2 t2 t5
+                addi t6 t6 1
+                j pow
+            skip_pow:
+                add a3 a3 t2
+                j multiplication
+        
+    swap_head:
+        sb zero 0(t4)
+        add t1 s0 zero
+        add s0 s4 zero
+        add s4 t1 zero
+        j to_string
+    
+    Lettura_mycypher:
+        add s6 s1 zero
         loop:
-            lb t1 0(a4) # carattere da esaminare della stringa mycypher
+            lb t1 0(s6)
             beq t1 zero adjust_values
-            addi a4 a4 1
-            li t2 65 # A
-            beq t1 t2 Cifrario_Cesare # se carattere A chiama cif di cesare
-            li t2 66 # B
-            beq t1 t2 Cifrario_a_Blocchi # se char B chiama cif a blocchi
-            li t2 67 # C
-            beq t1 t2 Cifrario_Occorrenze # se char C chiama cif occ
-            li t2 68 # D
+            addi s6 s6 1
+            li t2 65
+            beq t1 t2 Cifrario_a_Sostituzione
+            li t2 66
+            beq t1 t2 Cifrario_a_Blocchi
+            li t2 67
+            beq t1 t2 Cifratura_Occorrenze
+            li t2 68
             beq t1 t2 Dizionario
-            li t2 69 # E
+            li t2 69
             beq t1 t2 Inversione
             j loop
         adjust_values:
-            sub s2 zero s2 # inverte sostK
-            li s5 1 # segnala che si sta leggendo al contrario il mycypher
+            sub s2 zero s2
+            li s5 1
         rev_loop:
-            lb t1 0(a4)
-            blt a4 s1 exit
-            addi a4 a4 -1
-            li t2 65 # A
-            beq t1 t2 Cifrario_Cesare
-            li t2 66 # B
+            lb t1 0(s6)
+            blt s6 s1 exit
+            addi s6 s6 -1
+            li t2 65
+            beq t1 t2 Cifrario_a_Sostituzione
+            li t2 66
             beq t1 t2 Decifratura_a_Blocchi
-            li t2 67 # C
+            li t2 67
             beq t1 t2 Decifratura_Occorrenze
-            li t2 68 # D
+            li t2 68
             beq t1 t2 Dizionario
-            li t2 69 # E
+            li t2 69
             beq t1 t2 Inversione
             j rev_loop
         
